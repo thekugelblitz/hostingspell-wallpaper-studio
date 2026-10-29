@@ -684,7 +684,7 @@ try {
 </div>
 </section>
 </main>
-<footer><div class="wrap">© <?= date('Y') ?> HostingSpell. A little magic for every screen.</div></footer>
+<footer><div class="wrap">© <?= date('Y') ?> <a href="https://hostingspell.com" target="_blank" rel="noopener noreferrer">HostingSpell</a>. A little magic for every screen.</div></footer>
 <dialog id="viewer" class="viewer" aria-labelledby="viewer-title"><div class="viewer-top"><h2 id="viewer-title">Wallpaper</h2><button id="viewer-close" aria-label="Close wallpaper viewer">Close ✕</button></div><div id="viewer-stage" class="viewer-stage"><img id="viewer-image" alt=""></div><div class="viewer-bottom"><p class="meta" id="viewer-meta"></p><div class="inline"><button id="viewer-prev" aria-label="Previous wallpaper">← Previous</button><button id="viewer-next" aria-label="Next wallpaper">Next →</button><button id="viewer-fit">View original size</button><a id="viewer-download" class="link-button">Download original ↓</a></div></div></dialog>
 <script id="studio-config" data-cfasync="false" type="application/json"><?= json_encode(['script' => $script, 'initialTab' => $initialTab, 'csrf' => csrf($session), 'expires' => $session['expires'], 'items' => $items], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
 <script data-cfasync="false" nonce="<?= h($nonce) ?>" src="<?= h($script) ?>?action=app&amp;v=1.4.0" defer></script>
