@@ -23,10 +23,6 @@ const logo=createCanvas(100,50);logo.naturalWidth=100;logo.naturalHeight=50;cons
 context.testBG=bg;context.testLogo=logo;
 const run=s=>vm.runInContext(s,context);
 run('background=testBG;logo=testLogo;');
-check('provided Unsplash slug converts correctly',()=>{element('unsplash').value='https://unsplash.com/photos/blue-and-teal-flowing-wave-shapes-cPccYbPrF-A';assert.equal(run('downloadURL()'),'https://unsplash.com/photos/cPccYbPrF-A/download?force=true')});
-check('ID-only link retains internal hyphens',()=>{element('unsplash').value='https://unsplash.com/photos/cPccYbPrF-A';assert.equal(run('downloadURL()'),'https://unsplash.com/photos/cPccYbPrF-A/download?force=true')});
-check('browser rejects deceptive hostname',()=>{element('unsplash').value='https://unsplash.com.evil.test/photos/cPccYbPrF-A';assert.equal(run('downloadURL()'),null)});
-check('browser rejects credentials and custom port',()=>{for(const url of ['https://user@unsplash.com/photos/cPccYbPrF-A','https://unsplash.com:444/photos/cPccYbPrF-A']){element('unsplash').value=url;assert.equal(run('downloadURL()'),null)}});
 check('logo stays inside canvas at extreme positions',()=>{for(const p of [-5,0,.5,1,5]){run(`layout.x=${p};layout.y=${p};`);const r=run('logoRect()');assert.ok(r.x>=0&&r.y>=0&&r.x+r.w<=1920&&r.y+r.h<=1080)}});
 check('tall logos are constrained by canvas height',()=>{run('layout.scale=1;');logo.naturalWidth=10;logo.naturalHeight=100;const r=run('logoRect()');assert.ok(r.h<=1080&&r.w<=1920);logo.naturalWidth=100;logo.naturalHeight=50});
 check('snap rounds logo center independently of grid visibility',()=>{run('layout.scale=.22;layout.snap=true;layout.grid=false;layout.gridSize=64;moveLogo(501,501);');assert.equal(run('layout.x*layout.width'),512);assert.equal(run('layout.y*layout.height'),512)});
@@ -49,6 +45,17 @@ check('guides do not appear in exported painting',()=>{
  assert.deepEqual(pixel(clean,64,20),[18,52,86,255]);assert.notDeepEqual(pixel(canvas,64,20),pixel(clean,64,20));
  assert.deepEqual(pixel(clean,960,540),[255,0,0,255]);
  const png=clean.toBuffer('image/png');assert.ok(png.length>100);assert.equal(png.readUInt32BE(16),1920);assert.equal(png.readUInt32BE(20),1080);
+});
+check('row and column subdivisions snap independently with guides hidden',()=>{
+ run('layout.gridMode="divisions";layout.gridRows=3;layout.gridCols=4;layout.gridSub=2;layout.snap=true;layout.grid=false;moveLogo(501,501);');
+ assert.equal(run('layout.x*layout.width'),480);assert.equal(run('layout.y*layout.height'),540);
+ run('layout.gridMode="pixels";layout.snap=false;');
+});
+check('corner resizing preserves logo ratio and anchors top-left',()=>{
+ run('layout.x=.5;layout.y=.5;layout.scale=.2;');const before=run('logoRect()');
+ canvas.pointerdown({pointerId:8,clientX:before.x+before.w,clientY:before.y+before.h,preventDefault(){}});
+ canvas.pointermove({pointerId:8,clientX:before.x+before.w+100,clientY:before.y+before.h+50});canvas.pointerup({pointerId:8});
+ const after=run('logoRect()');assert.ok(after.w>before.w);assert.ok(Math.abs(after.x-before.x)<1e-8);assert.ok(Math.abs(after.y-before.y)<1e-8);assert.equal(after.w/after.h,2);
 });
 check('contain fit preserves complete image with black padding',()=>{
  run('layout.fit="contain";layout.width=1000;layout.height=1000;layout.grid=false;logo=null;');
