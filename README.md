@@ -38,7 +38,7 @@ No production Node runtime, database or Astro build is needed. `editor-source.js
 
 ## Upgrade from 1.x
 
-Replace `index.php` and `sitemap.xml`, then purge cached HTML and app JavaScript. Preserve `walls/`, `process/`, storage environment settings and the cleanup cron. New images are edited locally. To recover an existing unexpired 1.x workspace, open **Projects & brand kit → Open previous server workspace**, then download a project file. Legacy workspaces retain their original 24-hour expiry and isolation; they do not become public gallery images.
+Replace `index.php` and `sitemap.xml`, then purge cached HTML and app JavaScript. Preserve `walls/`, `process/`, storage environment settings and the cleanup cron. New images are edited locally. To recover an existing unexpired 1.x workspace, open **Projects & brand kit → Open previous server workspace**, then download a project file. The previous server workspace can also be deleted immediately using the separate deletion control. Legacy workspaces retain their original 24-hour expiry and isolation; they do not become public gallery images.
 
 ## Configure your own installation
 
