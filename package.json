@@ -1,9 +1,10 @@
 {
   "name": "hostingspell-wallpaper-studio",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Development tests for the standalone PHP Wallpaper Studio; production requires no Node.js.",
   "scripts": {
+    "build": "python3 build.py",
     "test": "node tests/editor.test.cjs",
     "test:browser": "node tests/browser.e2e.cjs",
     "test:recovery": "python3 tests/recovery.test.py",

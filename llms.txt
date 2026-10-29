@@ -1,0 +1,13 @@
+# HostingSpell Wallpaper Studio
+
+> Free wallpaper gallery and local browser wallpaper maker. MIT licensed source code; branding and gallery assets have separate permissions.
+
+- [Wallpaper Studio](https://manage.hostingspell.com/tools/walls/index.php): browse and download original public wallpapers.
+- [Editor](https://manage.hostingspell.com/tools/walls/index.php?tab=create): upload an image locally, add logos, text and shapes, apply filters, save editable projects and export PNG/JPG/WebP or multiple sizes.
+- [Logo wallpaper guide](https://manage.hostingspell.com/tools/walls/index.php?page=logo-wallpaper-maker)
+- [Company wallpaper guide](https://manage.hostingspell.com/tools/walls/index.php?page=company-wallpaper-maker)
+- [Phone wallpaper guide](https://manage.hostingspell.com/tools/walls/index.php?page=phone-wallpaper-maker)
+- [AMOLED guide](https://manage.hostingspell.com/tools/walls/index.php?page=amoled-wallpapers)
+- [Source](https://github.com/thekugelblitz/hostingspell-wallpaper-studio)
+
+New editor images stay in the visitor's browser. Optional drafts and brand kits are saved on the device. Legacy server projects can be explicitly recovered before their original expiry. Search visibility and AI indexing are not guaranteed by this file.

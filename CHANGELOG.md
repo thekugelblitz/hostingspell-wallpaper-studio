@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0
+
+Local browser editing with image/text/shape layers, undo/redo, smart guides, four corner resizing, touch zoom, filters and editable project files. Optional device drafts and brand kits, batch size layouts with ZIP export, device preview overlays and logo visibility styling. Gallery thumbnails, share links and editor reuse; corrected deployment URLs, guide pages, dynamic sitemap and favicon. MIT licence and contributor documentation. Legacy private server recovery and cleanup remain available.
+
+
 ## 1.4.0
 
 - Add a public GitHub repository link with an inline icon in the header.

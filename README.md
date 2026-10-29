@@ -1,91 +1,80 @@
 # HostingSpell Wallpaper Studio
 
-A standalone AMOLED wallpaper gallery and private, upload-only logo wallpaper maker for PHP hosting. Version 1.4.0.
+A free wallpaper gallery and browser-based wallpaper workbench. Version **2.0.0**, MIT licensed source.
+
+[Live demo](https://manage.hostingspell.com/tools/walls/index.php) · [Source](https://github.com/thekugelblitz/hostingspell-wallpaper-studio)
 
 ## Features
 
-- Our Collection reads public images exclusively from the `walls/` directory beside `index.php`.
-- Fullscreen collection viewer, search, names, dimensions, file sizes and original downloads.
-- Natural name order (A–Z) by default; switch to Z–A, newest/oldest, largest/smallest file or highest/lowest resolution. The server renders the chosen order and matching viewer navigation; the sort form also works without JavaScript. Dates use each image file’s modification time; resolution sorts by total pixel count.
-- A GitHub icon in the header links directly to the public repository.
-- Upload a wallpaper and company logo; drag to move and use the orange corner handle to resize.
-- Grid visibility and snapping switch independently. Use pixel spacing or adjustable rows/columns with subdivisions.
-- Desktop/mobile presets, custom canvas dimensions, opacity, image fit and optional quick placement.
-- PNG/JPG/WebP export in the browser, without selection or grid guides.
-- Private cookie-isolated projects with fixed 24-hour expiry, automatic cleanup and immediate deletion.
-- No photo-link input, remote image importing, outbound photo requests or cURL dependency.
+- Local image editing: new uploads, text, shapes, logos, filters and finished images stay in the browser. No image upload API is used by the new editor.
+- Multiple image, text and shape layers, with lock/hide, duplicate, delete, forward/backward order, rotation, opacity and numeric dimensions. Maximum 40 layers.
+- Rectangle, square, rounded rectangle, circle, ellipse, triangle, diamond, pentagon, hexagon, polygon, star, arrow and line. Solid/hollow styles, colours, stroke, corner radius, polygon sides and star parameters.
+- Dragging, four corner resize handles, keyboard nudging, clipboard images, drop onto canvas, pinch zoom and desktop/phone preview overlays.
+- Undo/redo (40 document states), smart alignment to canvas and object edges, independent grid visibility/snapping, pixel or nested row/column grids, and quick alignment.
+- Grayscale, vintage, warm, cool, noir and fade filters; strength, brightness, contrast and saturation. Filters affect the wallpaper; logo colours remain intact.
+- Text with six device font families, size, colour, weight, alignment, outline and shadow. Logos can use a shadow, white outline and dark backing plate.
+- PNG, JPG and WebP export. Selection handles, grid, guides and device preview overlays never export.
+- Portable `.hswall` projects with embedded images. Save up to eight independently positioned canvas layouts in a project and export them in one ZIP. Without saved layouts, ZIP exports desktop and phone versions.
+- Optional device-local draft recovery and a reusable logo kit with brand colour and saved placements. Clear saved device data at any time. Draft recovery is off by default and browser storage can be cleared or evicted; project files are the portable backup.
+- Gallery search, default natural name A–Z sorting, seven alternative sort orders, original downloads, shareable wallpaper URLs, “Use in editor,” and cached JPEG thumbnails. Collection favourites and category/colour filters are deliberately absent.
+- Canonical/social metadata, individual wallpaper metadata, four useful guide pages, favicon, static sitemap and a dynamic sitemap including collection files.
 
-## Installation
+## Install on PHP hosting
 
-Requires PHP 8.2+, Fileinfo and GD with PNG/JPEG/WebP support. No database, Node.js runtime or build step is needed in production.
+1. Upload **index.php** to `/public_html/tools/walls/index.php`.
+2. Put public collection images in `/public_html/tools/walls/walls/` (a child directory beside index.php).
+3. PHP 8.2+, Fileinfo and GD with PNG/JPEG/WebP support are required for legacy recovery, upload APIs and thumbnail generation. Use a 256 MB PHP memory limit. The host must permit private storage creation.
+4. `process/` is generated automatically. Prefer a private absolute path outside the web root using `WPS_STORAGE`. The app protects default storage with `.htaccess`, guarded PHP files and restrictive permissions. For Nginx, explicitly deny the deployed `/tools/walls/process/` location.
+5. Preserve the cleanup cron for old private workspaces and obsolete thumbnail cache entries:
 
-1. Upload `index.php` to your installation directory, for example `/public_html/walls/index.php`.
-2. Put public wallpapers inside the child directory `/public_html/walls/walls/`. Private uploads never enter the collection.
-3. Ensure PHP can create and write `process/`. Prefer storage outside the web root when possible by setting `WPS_STORAGE` to an absolute private path.
-4. Configure supported PHP settings through cPanel MultiPHP INI Editor or `.user.ini`:
-
-   ```ini
-   upload_max_filesize = 25M
-   post_max_size = 26M
-   memory_limit = 256M
-   max_execution_time = 60
-   max_input_time = 60
-   file_uploads = On
-   ```
-
-   The app enforces 25 MB / 24 MP wallpapers, 4 MB / 4 MP logos, and 16 MP exports. Raising server limits does not raise these limits. `.htaccess` `php_value` directives are handler dependent and may cause HTTP 500.
-5. Add the required cleanup cron, using your actual PHP binary and path:
-
-   ```cron
-   */5 * * * * /opt/cpanel/ea-php83/root/usr/bin/php /home/CPANEL_USER/public_html/walls/index.php --cleanup >> /home/CPANEL_USER/wallpaper-cleanup.log 2>&1
-   ```
-
-6. Verify direct access to `/walls/process/secret.php` is denied with 403/404. The app creates an Apache/LiteSpeed denial rule and uses guarded PHP asset files. On Nginx add a location rule:
-
-   ```nginx
-   location ^~ /walls/process/ { deny all; return 404; }
-   ```
-
-7. Bypass CDN, LiteSpeed and reverse-proxy caching for application HTML and API endpoints; public collection images can be cached. Keep the Rocket Loader exclusion on the app script.
-8. Upload `sitemap.xml`, update its URLs and the canonical/social URLs in `index.php` if deploying elsewhere, and submit it to your search console. Metadata and structured data support indexing but do not guarantee rankings.
-
-## Upgrading
-
-Replace `index.php` and `sitemap.xml`, then purge cached HTML and old app JavaScript. Preserve public `walls/` images and private `process/` data. Existing project images and layouts still load. The removed `action=import` endpoint returns JSON 404. No remote-source links are displayed for older projects.
-
-## Privacy and limits
-
-Necessary HttpOnly, SameSite=Strict cookies identify private projects; HTTPS deployments use Secure cookies. Fixed expiry is 24 hours and does not extend with activity. Expired assets become inaccessible; the cron removes files within approximately five minutes when running correctly. Cookie expiry alone cannot execute server cleanup. Delete my project removes the workspace immediately.
-
-Uploads replace the previous background/logo. Limits include 20 uploads per hour per network address, 120 API requests per ten minutes, 100 active projects and 1 GB temporary storage. Shared networks share rate limits. The application trusts `REMOTE_ADDR`, never arbitrary forwarding headers; configure the host's trusted proxy real-IP handling when behind a CDN.
-
-The server validates MIME/type and image dimensions, normalizes logos through GD, requires CSRF tokens, restricts cross-site mutations and isolates assets by signed cookies. Keep PHP patched and never commit `process/`, logs, `.env` files or visitor uploads.
-
-## Troubleshooting
-
-Upload failures display HTTP status and available request references. PHP errors after startup produce buffered JSON where possible. A small reserved buffer permits reporting many PHP memory failures. A firewall block, PHP startup failure or externally killed worker can still return HTML or no response; the browser identifies those cases.
-
-Read `process/diagnostics.php` through SSH or cPanel File Manager. This PHP-guarded private application log is bounded to approximately 512 KB and contains references, timestamps and errors rather than cookies or request bodies. PHP's configured server error log also receives failures. Never make diagnostics publicly downloadable.
-
-If an error never reaches PHP, inspect the matching Cloudflare event, ModSecurity audit entry or Apache/LiteSpeed access/error log. Do not disable firewalls globally.
-
-Print CLI configuration and recent application diagnostics using the matching PHP binary:
-
-```bash
-/opt/cpanel/ea-php83/root/usr/bin/php /home/CPANEL_USER/public_html/walls/index.php --diagnostics
+```cron
+*/5 * * * * /opt/cpanel/ea-php83/root/usr/bin/php /home/CPANEL_USER/public_html/tools/walls/index.php --cleanup >> /home/CPANEL_USER/wallpaper-cleanup.log 2>&1
 ```
 
-CLI INI settings can differ from the website handler. Do not expose a public phpinfo page.
+6. Upload `sitemap.xml` and `llms.txt` if useful. Submit `https://manage.hostingspell.com/tools/walls/index.php?action=sitemap` to search engines to include current collection items.
+7. Bypass CDN/LiteSpeed caching for application HTML and legacy private API routes. Cache public collection files and thumbnails. Keep `data-cfasync="false"` on the application script.
 
-## Development checks
+No production Node runtime, database or Astro build is needed. `editor-source.js`, `build.py`, tests and npm files are development files; `index.php` contains the complete editor.
 
-```bash
+## Upgrade from 1.x
+
+Replace `index.php` and `sitemap.xml`, then purge cached HTML and app JavaScript. Preserve `walls/`, `process/`, storage environment settings and the cleanup cron. New images are edited locally. To recover an existing unexpired 1.x workspace, open **Projects & brand kit → Open previous server workspace**, then download a project file. Legacy workspaces retain their original 24-hour expiry and isolation; they do not become public gallery images.
+
+## Configure your own installation
+
+Edit `SITE_URL`, `REPOSITORY_URL` and `BRAND_LOGO` near the top of `index.php`, the header/footer branding, and the URLs in sitemap.xml and llms.txt. Use a local brand image or update CSP if choosing a different remote image host. Keep canonical URLs on your main destination, not a URL shortener.
+
+The gallery scans only the child `walls/` directory. Supported public image formats are JPEG, PNG, WebP, AVIF and GIF, subject to host decoding support for thumbnails. Thumbnail generation falls back to original files for unsupported formats or very large images. Original downloads are byte-for-byte unchanged. Default sorting is natural filename order; date sorting uses file modification time, and resolution uses pixel count.
+
+## Browser privacy and limits
+
+New PNG/JPG/WebP files are limited to 32 MB, 64 MP and 16,000 px per side before normalization. Backgrounds above 24 MP and image layers above 4 MP are resized with a visible message. An editing session is capped at 64 MP of decoded source images, including undo history. Reload after downloading a project to release the session image pool. Canvas export is capped at 16 MP, with dimensions from 320–7680 px per side. Large exports and ZIPs can still be constrained by a device's available memory.
+
+Device drafts and brand kits use IndexedDB only when requested. They remain until cleared or removed by the browser. Saving a portable project embeds its images; share it only when you intend to share those assets. Optional old server workspace recovery uses the existing signed HttpOnly/SameSite cookie and CSRF-protected endpoints. The HTML retains that compatibility cookie. There are no accounts or analytics.
+
+Canvas filters, clipboard paste/share, IndexedDB and touch gestures depend on browser capabilities. Use a current browser. WebP encoding can fall back to PNG; the downloaded extension follows the actual image MIME type. File download and project export remain the reliable backup when device storage is unavailable. Preview clocks and icons are illustrative, not exact OS safe areas.
+
+The MIT licence applies to code. HostingSpell branding and gallery images require separate permission; bring your own assets when reusing the tool.
+
+## Development
+
+```sh
 npm ci
+python3 build.py
 npm test
-python3 tests/security_smoke.py http://127.0.0.1:8765/index.php
+npm run test:browser
 npm run test:sorting
 npm run test:recovery
-npm run test:browser
+python3 tests/security_smoke.py http://127.0.0.1:8765/index.php
 ```
 
-The HTTP smoke suite requires a disposable, fresh PHP development server with writable isolated `WPS_STORAGE`. Never run mutation tests against production. Browser and recovery suites create their own disposable application/storage copies. Install a Playwright-compatible Chromium for browser tests. `PHP_BIN`, `PHP_EXTRA_ARGS` (a JSON array), `PHP_LIBRARY_PATH`, and `CHROMIUM_PATH` can select development runtimes. Production does not require these development packages.
+The HTTP security suite requires a fresh disposable local server and isolated writable WPS_STORAGE. The browser, sorting and recovery suites create disposable copies themselves. Install Playwright-compatible Chromium. `PHP_BIN`, `PHP_EXTRA_ARGS` (JSON array), `PHP_LIBRARY_PATH` and `CHROMIUM_PATH` select alternate runtimes. Never run mutation tests against production.
+
+See [VALIDATION.md](VALIDATION.md), [CHANGELOG.md](CHANGELOG.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Interface previews
+
+These use synthetic test images rather than visitor data.
+
+![Desktop editor](preview-desktop.png)
+![Mobile editor](preview-mobile.png)
