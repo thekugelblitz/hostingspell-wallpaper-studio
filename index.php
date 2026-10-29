@@ -192,7 +192,8 @@ function sendAsset(string $path, array $m): never {
     header('Content-Type: ' . $m['mime']); header('Content-Length: ' . (string)(filesize($path) - strlen(GUARD)));
     header('Content-Disposition: inline'); fpassthru($f); fclose($f); exit;
 }
-function collection(): array {
+const SORT_OPTIONS = ['name-asc' => 'Name: A–Z', 'name-desc' => 'Name: Z–A', 'newest' => 'Newest first', 'oldest' => 'Oldest first', 'size-desc' => 'Largest file', 'size-asc' => 'Smallest file', 'resolution-desc' => 'Highest resolution', 'resolution-asc' => 'Lowest resolution'];
+function collection(string $sort = 'name-asc'): array {
     $items = [];
     $collectionDir = __DIR__ . '/walls';
     if (!is_dir($collectionDir) || is_link($collectionDir)) return [];
@@ -202,7 +203,20 @@ function collection(): array {
         if (!$i || !in_array($i['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'], true)) continue;
         $items[] = ['file' => $f->getFilename(), 'name' => pathinfo($f->getFilename(), PATHINFO_FILENAME), 'width' => $i[0], 'height' => $i[1], 'mime' => $i['mime'], 'bytes' => $f->getSize(), 'time' => $f->getMTime()];
     }
-    usort($items, static fn($a, $b) => ($b['time'] <=> $a['time']) ?: strnatcasecmp($a['name'], $b['name']));
+    usort($items, static function ($a, $b) use ($sort): int {
+        $name = strnatcasecmp($a['name'], $b['name']) ?: strcmp($a['file'], $b['file']);
+        $pixelsA = $a['width'] * $a['height']; $pixelsB = $b['width'] * $b['height'];
+        return (match ($sort) {
+            'name-desc' => -$name,
+            'newest' => $b['time'] <=> $a['time'],
+            'oldest' => $a['time'] <=> $b['time'],
+            'size-desc' => $b['bytes'] <=> $a['bytes'],
+            'size-asc' => $a['bytes'] <=> $b['bytes'],
+            'resolution-desc' => $pixelsB <=> $pixelsA,
+            'resolution-asc' => $pixelsA <=> $pixelsB,
+            default => $name,
+        }) ?: $name;
+    });
     return $items;
 }
 
@@ -236,6 +250,8 @@ $('viewer-prev').onclick = () => viewWallpaper((activeView - 1 + BOOT.items.leng
 $('viewer-next').onclick = () => viewWallpaper((activeView + 1) % BOOT.items.length);
 $('viewer-fit').onclick = () => { const original = $('viewer-stage').classList.toggle('original'); $('viewer-fit').textContent = original ? 'Fit to screen' : 'View original size'; };
 $('viewer').addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); $('viewer-prev').click(); } if (e.key === 'ArrowRight') { e.preventDefault(); $('viewer-next').click(); } });
+$('sort').onchange = () => $('sort-form').requestSubmit();
+$('sort-apply').hidden = true;
 $('search').addEventListener('input', () => {
     const query = $('search').value.toLocaleLowerCase().trim(); let count = 0;
     document.querySelectorAll('.card').forEach(card => { card.hidden = !card.dataset.name.toLocaleLowerCase().includes(query); if (!card.hidden) count++; });
@@ -549,7 +565,8 @@ try {
         setcookie($cookieName, $token, ['expires' => $expires, 'path' => rtrim(dirname($_SERVER['SCRIPT_NAME']), '/') . '/', 'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || getenv('WPS_HTTPS') === '1', 'httponly' => true, 'samesite' => 'Strict']);
     }
     $initialTab = input('tab', $_GET) === 'create' ? 'create' : 'collection';
-    $items = collection();
+    $sort = input('sort', $_GET); if (!isset(SORT_OPTIONS[$sort])) $sort = 'name-asc';
+    $items = collection($sort);
     $download = input('download', $_GET);
     if ($download !== '') {
         foreach ($items as $item) if ($item['file'] === $download) {
@@ -601,10 +618,11 @@ try {
 .help{margin-top:14px;padding-top:14px}.privacy{margin-top:12px}.align-grid{margin-bottom:0}.canvas-panel{padding:18px}.stage{border-style:dashed}.check{white-space:nowrap}.studio-top{margin-bottom:12px}
 @media(max-width:740px){.gallery{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}.intro{padding-top:24px}.preview{height:auto}.tabs .tab-card{min-height:86px}.canvas-panel{position:static}}
 @media(prefers-reduced-motion:reduce){.card,.preview img{transition:none}.card:hover,.card:hover .preview img{transform:none}}
+.nav-actions{display:flex;align-items:center;gap:24px}.repo-link{display:inline-flex;align-items:center;gap:8px;border:1px solid #333;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:600;white-space:nowrap}.repo-link:hover{color:var(--orange);border-color:var(--orange)}.repo-link svg{flex:none}.collection-tools{display:flex;align-items:center;gap:12px;max-width:100%;flex:1;justify-content:flex-end}.collection-tools input{width:260px;max-width:100%}.collection-tools form{display:flex;align-items:center;gap:8px}.collection-tools select{width:180px}@media(max-width:740px){.collection-tools{width:100%;flex-wrap:wrap;justify-content:flex-start}.collection-tools input{flex:1;min-width:140px}.collection-tools select{width:170px}.nav-actions{gap:12px}}@media(max-width:600px){.nav-actions .tag{display:none}}@media(max-width:400px){.collection-tools input{width:100%;flex-basis:100%}.collection-tools form,.collection-tools select{flex:1;width:100%}}
 </style>
 </head>
 <body>
-<header class="header"><div class="wrap nav"><a href="<?= h($script) ?>" aria-label="HostingSpell Wallpaper Studio"><img class="brand" src="<?= h(BRAND_LOGO) ?>" alt="HostingSpell" width="185"></a><span class="tag">Wallpaper Studio</span></div></header>
+<header class="header"><div class="wrap nav"><a href="<?= h($script) ?>" aria-label="HostingSpell Wallpaper Studio"><img class="brand" src="<?= h(BRAND_LOGO) ?>" alt="HostingSpell" width="185"></a><div class="nav-actions"><span class="tag">Wallpaper Studio</span><a class="repo-link" href="https://github.com/thekugelblitz/hostingspell-wallpaper-studio" target="_blank" rel="noopener noreferrer" aria-label="View Wallpaper Studio source on GitHub (opens in a new tab)"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.23c-3.34.73-4.04-1.42-4.04-1.42-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.21.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.6-2.81 5.62-5.49 5.92.43.37.82 1.1.82 2.22v3.3c0 .32.22.7.83.58A12 12 0 0 0 12 .3Z"/></svg><span>GitHub</span></a></div></div></header>
 <main class="wrap">
 <section class="intro"><p class="eyebrow">Your screen. Your signature.</p><h1>Your wallpaper. Your signature.</h1><p>Free desktop &amp; mobile wallpapers. Add your logo. Make it yours.</p></section>
 <nav class="tabs" role="tablist" aria-label="Wallpaper tools">
@@ -613,7 +631,7 @@ try {
 </nav>
 <noscript><p>The collection downloads work without JavaScript. Enable JavaScript to use the viewer and wallpaper editor.</p></noscript>
 <section id="collection" role="tabpanel" aria-labelledby="tab-collection" <?= $initialTab !== 'collection' ? 'hidden' : '' ?>>
-<div class="collection-bar"><span><?= count($items) ?> wallpapers</span><label class="sr" for="search">Search wallpapers</label><input id="search" type="search" maxlength="120" placeholder="Find a wallpaper…"></div>
+<div class="collection-bar"><span><?= count($items) ?> wallpapers</span><div class="collection-tools"><label class="sr" for="search">Search wallpapers</label><input id="search" type="search" maxlength="120" placeholder="Find a wallpaper…"><form id="sort-form" method="get" action="<?= h($script) ?>"><input type="hidden" name="tab" value="collection"><label class="sr" for="sort">Sort wallpapers</label><select id="sort" name="sort"><?php foreach (SORT_OPTIONS as $key => $label): ?><option value="<?= h($key) ?>" <?= $sort === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select><button id="sort-apply" type="submit">Sort</button></form></div></div>
 <div class="gallery" id="gallery">
 <?php foreach ($items as $index => $item): ?>
 <article class="card" data-name="<?= h($item['name']) ?>">
@@ -669,5 +687,5 @@ try {
 <footer><div class="wrap">© <?= date('Y') ?> HostingSpell. A little magic for every screen.</div></footer>
 <dialog id="viewer" class="viewer" aria-labelledby="viewer-title"><div class="viewer-top"><h2 id="viewer-title">Wallpaper</h2><button id="viewer-close" aria-label="Close wallpaper viewer">Close ✕</button></div><div id="viewer-stage" class="viewer-stage"><img id="viewer-image" alt=""></div><div class="viewer-bottom"><p class="meta" id="viewer-meta"></p><div class="inline"><button id="viewer-prev" aria-label="Previous wallpaper">← Previous</button><button id="viewer-next" aria-label="Next wallpaper">Next →</button><button id="viewer-fit">View original size</button><a id="viewer-download" class="link-button">Download original ↓</a></div></div></dialog>
 <script id="studio-config" data-cfasync="false" type="application/json"><?= json_encode(['script' => $script, 'initialTab' => $initialTab, 'csrf' => csrf($session), 'expires' => $session['expires'], 'items' => $items], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
-<script data-cfasync="false" nonce="<?= h($nonce) ?>" src="<?= h($script) ?>?action=app&amp;v=1.3.0" defer></script>
+<script data-cfasync="false" nonce="<?= h($nonce) ?>" src="<?= h($script) ?>?action=app&amp;v=1.4.0" defer></script>
 </body></html>

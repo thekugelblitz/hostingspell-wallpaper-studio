@@ -1,11 +1,13 @@
 # HostingSpell Wallpaper Studio
 
-A standalone AMOLED wallpaper gallery and private, upload-only logo wallpaper maker for PHP hosting. Version 1.3.0.
+A standalone AMOLED wallpaper gallery and private, upload-only logo wallpaper maker for PHP hosting. Version 1.4.0.
 
 ## Features
 
 - Our Collection reads public images exclusively from the `walls/` directory beside `index.php`.
 - Fullscreen collection viewer, search, names, dimensions, file sizes and original downloads.
+- Natural name order (A–Z) by default; switch to Z–A, newest/oldest, largest/smallest file or highest/lowest resolution. The server renders the chosen order and matching viewer navigation; the sort form also works without JavaScript. Dates use each image file’s modification time; resolution sorts by total pixel count.
+- A GitHub icon in the header links directly to the public repository.
 - Upload a wallpaper and company logo; drag to move and use the orange corner handle to resize.
 - Grid visibility and snapping switch independently. Use pixel spacing or adjustable rows/columns with subdivisions.
 - Desktop/mobile presets, custom canvas dimensions, opacity, image fit and optional quick placement.
@@ -81,6 +83,7 @@ CLI INI settings can differ from the website handler. Do not expose a public php
 npm ci
 npm test
 python3 tests/security_smoke.py http://127.0.0.1:8765/index.php
+npm run test:sorting
 npm run test:recovery
 npm run test:browser
 ```

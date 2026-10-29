@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+
+- Add a public GitHub repository link with an inline icon in the header.
+- Default collection sorting to natural name order; add seven alternative orders.
+- Keep viewer navigation consistent with selected sorting and support sorting without JavaScript.
+- 85 checks passed.
+
 ## 1.3.0
 
 - Make the editor upload-only; remove Unsplash UI, link handling, remote fetch code and cURL dependency.
