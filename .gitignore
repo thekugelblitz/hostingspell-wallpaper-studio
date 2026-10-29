@@ -1,0 +1,12 @@
+/process/
+/node_modules/
+/vendor/
+/.env
+/.env.*
+*.log
+*.zip
+/tests/artifacts/
+/walls/*
+!/walls/.gitkeep
+__pycache__/
+*.pyc
