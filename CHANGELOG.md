@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+- Make the editor upload-only; remove Unsplash UI, link handling, remote fetch code and cURL dependency.
+- Retain logo dragging/resizing, configurable grids, modern gallery and SEO from 1.2.
+- Confirm the retired import endpoint returns JSON 404.
+- 71 checks passed.
+
+## 1.2.0 — 29 October 2026
+
+- Add import HTTP diagnostics, bounded private logging, JSON fatal recovery and ID-only import payloads.
+- Shorten import transfer budget and retain strict outbound restrictions and upload quotas.
+- Add resizable canvas logos, row/column grids and cell subdivisions.
+- Simplify editor copy and modernize collection cards.
+- Add canonical/social metadata, structured data, sitemap and recovery regression tests.
+- 84 checks passed; live server import remains unverified.
+
 ## 1.1.0 — 29 October 2026
 
 - Fix Create and viewer execution behind Cloudflare Rocket Loader using a same-origin JavaScript endpoint and `data-cfasync="false"`.

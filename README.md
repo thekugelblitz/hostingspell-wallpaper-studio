@@ -1,13 +1,26 @@
 # HostingSpell Wallpaper Studio
 
-A single-page, self-hosted PHP wallpaper gallery and private logo editor. The complete application is in `index.php` (including a same-file JavaScript endpoint); no database, API key, JavaScript build or external JavaScript library is needed.
+A standalone AMOLED wallpaper gallery and private, upload-only logo wallpaper maker for PHP hosting. Version 1.3.0.
 
-## Install on cPanel / LiteSpeed / Apache
+## Features
 
-1. Back up your existing `index.php`, then upload the new one to the application directory. Create a **child `walls/` directory** and put all public collection images there. Images next to `index.php` are intentionally excluded.
-2. Select a currently supported PHP release, **PHP 8.2 or newer**, and enable **cURL, Fileinfo and GD** with PNG, JPEG and WebP support. Use HTTPS.
-3. PHP must be able to create a `process` subdirectory. Do not use permissions `777`: directories are created as `0700`, and project files as `0600`.
-4. Configure PHP through MultiPHP INI Editor or the appropriate server settings:
+- Our Collection reads public images exclusively from the `walls/` directory beside `index.php`.
+- Fullscreen collection viewer, search, names, dimensions, file sizes and original downloads.
+- Upload a wallpaper and company logo; drag to move and use the orange corner handle to resize.
+- Grid visibility and snapping switch independently. Use pixel spacing or adjustable rows/columns with subdivisions.
+- Desktop/mobile presets, custom canvas dimensions, opacity, image fit and optional quick placement.
+- PNG/JPG/WebP export in the browser, without selection or grid guides.
+- Private cookie-isolated projects with fixed 24-hour expiry, automatic cleanup and immediate deletion.
+- No photo-link input, remote image importing, outbound photo requests or cURL dependency.
+
+## Installation
+
+Requires PHP 8.2+, Fileinfo and GD with PNG/JPEG/WebP support. No database, Node.js runtime or build step is needed in production.
+
+1. Upload `index.php` to your installation directory, for example `/public_html/walls/index.php`.
+2. Put public wallpapers inside the child directory `/public_html/walls/walls/`. Private uploads never enter the collection.
+3. Ensure PHP can create and write `process/`. Prefer storage outside the web root when possible by setting `WPS_STORAGE` to an absolute private path.
+4. Configure supported PHP settings through cPanel MultiPHP INI Editor or `.user.ini`:
 
    ```ini
    upload_max_filesize = 25M
@@ -18,176 +31,58 @@ A single-page, self-hosted PHP wallpaper gallery and private logo editor. The co
    file_uploads = On
    ```
 
-5. Add the cleanup cron below. The application automatically creates `process/.htaccess` to deny all direct access on Apache/LiteSpeed, and uses guarded PHP files as an additional protection. Verify that `https://your-domain/path/process/secret.php` returns **403 or 404**, with no file content. Directory browsing must also be disabled by your host.
-6. Disable HTML/page caching for this page and its query-string endpoints at your CDN, LiteSpeed cache and reverse proxy. Each page has its own security token and cookie. Do not set a cache-everything rule here. Static public collection images can be cached.
-7. Test the acceptance checklist below before making the tool public.
+   The app enforces 25 MB / 24 MP wallpapers, 4 MB / 4 MP logos, and 16 MP exports. Raising server limits does not raise these limits. `.htaccess` `php_value` directives are handler dependent and may cause HTTP 500.
+5. Add the required cleanup cron, using your actual PHP binary and path:
 
-Existing PHP upload limits can reject a request before application code runs. The tool reports an error rather than treating a rejected upload as a successful save.
+   ```cron
+   */5 * * * * /opt/cpanel/ea-php83/root/usr/bin/php /home/CPANEL_USER/public_html/walls/index.php --cleanup >> /home/CPANEL_USER/wallpaper-cleanup.log 2>&1
+   ```
 
-## Cleanup cron — required for unattended expiry
+6. Verify direct access to `/walls/process/secret.php` is denied with 403/404. The app creates an Apache/LiteSpeed denial rule and uses guarded PHP asset files. On Nginx add a location rule:
 
-Projects and their session cookies have an absolute **24-hour** lifetime, without sliding renewal. Expired assets become inaccessible immediately. The cron removes files within approximately five minutes after expiry, provided cron is running and has write access. Requests that mutate projects also sweep expired directories.
+   ```nginx
+   location ^~ /walls/process/ { deny all; return 404; }
+   ```
 
-Cookie expiry or closing a browser cannot itself execute deletion on the server. Clearing a cookie only loses access; the original project still expires on its original schedule. The Delete my project button deletes it immediately.
+7. Bypass CDN, LiteSpeed and reverse-proxy caching for application HTML and API endpoints; public collection images can be cached. Keep the Rocket Loader exclusion on the app script.
+8. Upload `sitemap.xml`, update its URLs and the canonical/social URLs in `index.php` if deploying elsewhere, and submit it to your search console. Metadata and structured data support indexing but do not guarantee rankings.
 
-Example cPanel cron (replace both paths with your real PHP CLI binary and application path):
+## Upgrading
 
-```cron
-*/5 * * * * /usr/local/bin/php /home/CPANEL_USER/public_html/wallpapers/index.php --cleanup >> /home/CPANEL_USER/wallpaper-cleanup.log 2>&1
-```
+Replace `index.php` and `sitemap.xml`, then purge cached HTML and old app JavaScript. Preserve public `walls/` images and private `process/` data. Existing project images and layouts still load. The removed `action=import` endpoint returns JSON 404. No remote-source links are displayed for older projects.
 
-Use the same PHP version/configuration as the website. For EasyApache PHP 8.3, a common CLI binary is `/opt/cpanel/ea-php83/root/usr/bin/php`; verify the actual path on your server. Check the cleanup log after installation. Do not expose logs under the public web root. Rotate this log using your server's normal log rotation.
+## Privacy and limits
 
-If a PHP worker is forcibly killed while importing, its OS temporary file can survive; normal completion and errors unlink it. Keep OS temporary-file cleanup enabled as well. Saved project images and metadata are under `process` and use the project's own expiry cleanup.
+Necessary HttpOnly, SameSite=Strict cookies identify private projects; HTTPS deployments use Secure cookies. Fixed expiry is 24 hours and does not extend with activity. Expired assets become inaccessible; the cron removes files within approximately five minutes when running correctly. Cookie expiry alone cannot execute server cleanup. Delete my project removes the workspace immediately.
 
-## Nginx / reverse proxies
+Uploads replace the previous background/logo. Limits include 20 uploads per hour per network address, 120 API requests per ten minutes, 100 active projects and 1 GB temporary storage. Shared networks share rate limits. The application trusts `REMOTE_ADDR`, never arbitrary forwarding headers; configure the host's trusted proxy real-IP handling when behind a CDN.
 
-On Nginx, `.htaccess` has no effect. Add a deny rule for the actual process URL path and reload Nginx:
+The server validates MIME/type and image dimensions, normalizes logos through GD, requires CSRF tokens, restricts cross-site mutations and isolates assets by signed cookies. Keep PHP patched and never commit `process/`, logs, `.env` files or visitor uploads.
 
-```nginx
-# Change /wallpapers/ to the actual URL prefix, or use /process/ at site root.
-location ^~ /wallpapers/process/ { return 404; }
-```
+## Troubleshooting
 
-The PHP file guard is defense in depth; the deny rule and correct PHP handling are still required. Never configure the server to deliver PHP source as text. Prefer private storage outside the web root when possible:
+Upload failures display HTTP status and available request references. PHP errors after startup produce buffered JSON where possible. A small reserved buffer permits reporting many PHP memory failures. A firewall block, PHP startup failure or externally killed worker can still return HTML or no response; the browser identifies those cases.
 
-```text
-WPS_STORAGE=/home/CPANEL_USER/private/wallpaper-process
-```
+Read `process/diagnostics.php` through SSH or cPanel File Manager. This PHP-guarded private application log is bounded to approximately 512 KB and contains references, timestamps and errors rather than cookies or request bodies. PHP's configured server error log also receives failures. Never make diagnostics publicly downloadable.
 
-Set this environment variable for both PHP-FPM and cron, or change the `$storage` assignment near the top of `index.php` to your absolute private path. The default is the requested `process` folder next to `index.php`.
+If an error never reaches PHP, inspect the matching Cloudflare event, ModSecurity audit entry or Apache/LiteSpeed access/error log. Do not disable firewalls globally.
 
-If TLS terminates at a trusted reverse proxy and PHP does not see `HTTPS=on`, set the fixed server environment variable `WPS_HTTPS=1`. Do not derive this flag from untrusted visitor headers. Cookie Secure is otherwise detected from the web server's HTTPS variable. Keep the public site HTTPS-only.
-
-IP limits use `REMOTE_ADDR`, deliberately ignoring client-supplied forwarding headers. If using Cloudflare or a load balancer, configure your web server to restore the original address **only from known trusted proxy ranges**. Otherwise everyone behind the proxy shares a limit.
-
-## How it works
-
-### Our Collection
-
-Upload collection images into the `walls/` child directory next to `index.php`; only that directory is scanned, never the application root, `process`, symlinks or nested directories. Names, pixel dimensions, file sizes and original downloads are shown. PNG, JPEG, WebP, AVIF, GIF and valid raster `.img` files are recognized. The modal viewer supports previous/next, Escape, arrow keys, fit-to-screen and original-pixel viewing. Search filters by wallpaper name.
-
-### Create a wallpaper
-
-1. Paste a free Unsplash photo page URL. For example:
-   - `https://unsplash.com/photos/blue-and-teal-flowing-wave-shapes-cPccYbPrF-A`
-   - becomes `https://unsplash.com/photos/cPccYbPrF-A/download?force=true`.
-2. The server downloads the image, validates it, and stores a private, guarded asset under this project's random directory inside `process`.
-3. Alternatively, upload a PNG, JPEG or WebP wallpaper directly.
-4. Upload a company logo; transparent PNG is recommended. The server decodes and re-encodes logos as PNG, retaining transparency and dropping extra file metadata. Uploaded wallpaper metadata is not stripped.
-5. Drag the logo with a mouse or touch, use the nine placement buttons, or focus the canvas and use arrow keys. Shift + arrow moves 10 px. Adjust logo width and opacity. A logo's size is constrained so it stays fully on the canvas.
-6. Choose desktop, mobile, QHD, 4K or a custom output size. Fill uses a center crop; Fit shows the complete wallpaper with black borders. There is no manual photo cropping/panning.
-7. Grid visibility and snap are independent. Snapping rounds the **logo center** to the nearest grid intersection; canvas edges take priority to keep the logo visible. Placement buttons align precisely to an edge or center. Grid and selection outlines are preview-only.
-8. Download PNG, high-quality JPEG or WebP. If a browser falls back to PNG for an unsupported export encoder, the filename uses `.png` correctly. The finished export is composed in the browser and is not uploaded or published.
-
-Layout changes are saved after a short debounce, once a project exists. Reloading restores the wallpaper, logo and saved settings while the cookie is valid. There is one project per browser cookie, so two tabs in the same browser share its saved project; the most recent save wins. Private/incognito browsers or separate browser profiles receive different projects. No personal uploads are added to the public collection.
-
-## Unsplash behavior and permissions
-
-This version uses the exact public-download-link workflow requested, with no API credentials. It does **not** scrape the photo page, circumvent a challenge or bypass paid-photo access. Public website endpoints can change or reject server requests. Imports show the actual failure and offer Open download plus Upload wallpaper as a fallback. A successful live import depends on your host allowing outbound HTTPS and DNS, and Unsplash allowing the request; it cannot be guaranteed across hosting providers.
-
-Only `unsplash.com`, `images.unsplash.com` and `plus.unsplash.com` are allowed outbound hosts, with validated HTTPS URLs, no custom ports or credentials, public IPv4 validation, DNS pinning, TLS verification, disabled proxies, manually checked redirects, a 30-second transfer budget and a 25 MB response-body cap. IPv6-only egress environments need an IPv4 route for imports.
-
-For a future official Unsplash API integration, follow its separate hotlinking, attribution and download-tracking requirements rather than merely swapping in an API URL. References:
-
-- https://unsplash.com/documentation
-- https://help.unsplash.com/en/articles/2511245-unsplash-api-guidelines
-- https://unsplash.com/license
-
-Users remain responsible for their image and logo permissions. Unsplash branding or photo links shown in the editor are not stamped onto exports. Do not use the private import feature to republish an Unsplash image library as your own collection.
-
-## Defaults and protections
-
-Defaults are defined near the top of `index.php` or the relevant `rate()` calls:
-
-| Resource | Limit |
-|---|---|
-| Session/project lifetime | Fixed 24 hours |
-| Background upload/import | 25 MiB, 24 million pixels, 12,000 px per side |
-| Logo | 4 MiB before and after normalization, 4 million pixels |
-| Editor input formats | Real PNG, JPEG and WebP; SVG/GIF uploads rejected |
-| Export canvas | 320–7,680 px per side; 16 million pixels total |
-| New projects | 6 per hour per IP |
-| Unsplash imports | 6 per 10 minutes, 20 per 24-hour window per IP |
-| Global Unsplash imports | 100 per hour |
-| Uploads | 20 per hour per IP |
-| API requests | 120 per 10 minutes per IP and per session |
-| Layout saves | 40 per 10 minutes per IP |
-| Private asset reads | 120 per 10 minutes and 512 MiB per hour per IP |
-| Global saved projects/storage | 100 live projects / 1 GiB soft budget with preflight headroom |
-| Minimum free disk space before asset writes | 100 MiB |
-| Stored rate-limit buckets | 4,096, pruned after their windows expire |
-| Simultaneous mutations | 1 server-wide; competing requests receive HTTP 429 |
-
-Rate limits use atomic file locking and fixed windows; NAT/shared networks share IP limits. Deleting cookies does not reset IP limits. Layout saves, cookie resets and import failures still count toward relevant limits. Busy responses are deliberate to avoid parallel downloads exhausting shared-host resources. Export is local to the browser, so repeated exports do not create server work or extra files.
-
-Other measures: signed random session cookies, HttpOnly and SameSite=Strict, Secure on HTTPS, fixed session expiry, synchronizer CSRF tokens, no permissive CORS, escaped HTML/JSON output, restrictive CSP, nosniff, private no-store responses, no path arguments for assets, no shell execution, non-recursive cleanup, symlink rejection, MIME/header checks, bounded photo dimensions and re-encoded logos. Temporary photos retain their original encoding, are served as their validated raster MIME type and are never executed.
-
-These controls reduce risk; no implementation can honestly promise freedom from every vulnerability or denial-of-service attack. Keep PHP/GD/cURL patched. Enforce request-rate, body-size, connection and bandwidth limits at the web server/CDN too: PHP cannot stop bytes being received before it runs. This file-backed design is intended for modest traffic on one server with a local filesystem supporting `flock`, not multiple replicas on shared NFS. For larger traffic, move state and quotas to a shared transactional store and use a job queue.
-
-## Acceptance checks
-
-- Two separate browser profiles cannot read each other's private assets.
-- A missing/incorrect CSRF token returns 403; expired cookies return 410 for private operations.
-- SVG, scripts renamed `.png`, oversized files and over-dimension images are rejected.
-- Off-domain URLs, custom ports, credentials, invalid photo paths and redirects outside the host allowlist are rejected.
-- Import a free Unsplash image or exercise the manual-upload fallback if upstream rejects requests.
-- Add a transparent PNG logo; test mouse/touch drag, keyboard movement, grid and snapping separately.
-- Reload and verify restoration. Export PNG/JPG/WebP and verify dimensions, logo placement and absence of guides.
-- Delete the project and verify its folder disappears.
-- Check the cron log and verify expired test projects are removed without affecting public collection files.
-- Verify the process URL is blocked, PHP source cannot be downloaded and authenticated HTML/API responses are never cached.
-
-## Files
-
-`index.php` is the entire deployable app. `README.md` is this guide. Upload only `index.php` to the public application directory; retain this guide outside the public directory if preferred. No admin password, API secret or placeholder credentials need to be entered.
-
-## Included automated checks
-
-The tests are development-only; the running application needs neither Python nor Node.
-
-Start a disposable local PHP server with a **fresh, non-production** storage path:
+Print CLI configuration and recent application diagnostics using the matching PHP binary:
 
 ```bash
-WPS_STORAGE=/tmp/hs-wallpaper-test php -d upload_max_filesize=25M -d post_max_size=26M -d memory_limit=256M -S 127.0.0.1:8765
+/opt/cpanel/ea-php83/root/usr/bin/php /home/CPANEL_USER/public_html/walls/index.php --diagnostics
 ```
 
-From a second terminal in this directory:
+CLI INI settings can differ from the website handler. Do not expose a public phpinfo page.
+
+## Development checks
 
 ```bash
+npm ci
+npm test
 python3 tests/security_smoke.py http://127.0.0.1:8765/index.php
-npm install --no-save @napi-rs/canvas
-node tests/editor.test.cjs
-```
-
-The security smoke test uses and deletes temporary test projects, consumes rate-limit buckets, and should never be run against production. Restart it with a new disposable storage directory on each run. The Node test executes the actual editor JavaScript in a DOM harness with a native raster canvas; it checks URL conversion, dragging, keyboard movement, geometry, snapping, resolution caps, fit mode and exported image pixels. It does not simulate the whole browser.
-
-## HostingSpell live installation and upgrading from 1.0
-
-The existing installation is at `https://manage.hostingspell.com/walls/`.
-
-| Item | Server layout relative to the manage subdomain document root | Public URL |
-|---|---|---|
-| Application | `walls/index.php` | `/walls/` |
-| Collection images | `walls/walls/your-wallpaper.png` | `/walls/walls/your-wallpaper.png` |
-| Private projects | `walls/process/` by default | Direct access must be blocked |
-
-Move existing public wallpapers from the application directory into the **child `walls/` directory**, then replace `index.php`. Do not move personal temporary files into the gallery. The repository includes the empty child directory marker; it does not include the images on the live server. Back up your files first.
-
-The Create-tab failure was reproduced on the live installation: Cloudflare Rocket Loader rewrote the editor's inline script to a non-executable custom type, and the tab did not switch. Version 1.1 serves JavaScript from `index.php?action=app&v=1.1.0` and marks both its script tag and inert JSON configuration with `data-cfasync="false"`. The attribute is deliberately placed before `src`, as Cloudflare documents. CSP permits the same-origin script. HTML/API replies also opt out of LiteSpeed/CDN caching. The rest of your Cloudflare settings need not be disabled site-wide.
-
-After uploading, purge any cached HTML for `/walls/` and reload. A Cloudflare Cache Everything rule can override origin headers: explicitly bypass HTML and private endpoints for this path. The JavaScript endpoint contains no visitor token and may be cached; the JSON configuration comes from the current private HTML response.
-
-Tabs are now large navigation cards and retain ordinary `?tab=create` / `?tab=collection` links. If JavaScript is disabled, the correct section still opens and a message explains that editing needs JavaScript. Custom wallpaper upload appears first in Create and supports dropping one image or choosing a file; 25 MiB / 24 MP limits are enforced again on the server. The mobile order is upload, preview, logo controls, then output settings.
-
-Cloudflare reference: https://developers.cloudflare.com/speed/optimization/content/rocket-loader/ignore-javascripts/
-
-### Real browser regression tests
-
-```bash
-npm install
-npx playwright install chromium
+npm run test:recovery
 npm run test:browser
 ```
 
-This launches a disposable PHP server/application copy and checks real Chromium tab navigation, custom wallpaper and logo uploads, viewer/download paths, export pixels, reload restoration, a JavaScript-disabled fallback and a 390-pixel mobile viewport. It never visits or modifies the live installation. See the test header for custom PHP/Chromium paths.
+The HTTP smoke suite requires a disposable, fresh PHP development server with writable isolated `WPS_STORAGE`. Never run mutation tests against production. Browser and recovery suites create their own disposable application/storage copies. Install a Playwright-compatible Chromium for browser tests. `PHP_BIN`, `PHP_EXTRA_ARGS` (a JSON array), `PHP_LIBRARY_PATH`, and `CHROMIUM_PATH` can select development runtimes. Production does not require these development packages.
