@@ -1,6 +1,6 @@
 # HostingSpell Wallpaper Studio
 
-A free wallpaper gallery and browser-based wallpaper workbench. Version **2.0.0**, MIT licensed source.
+A free wallpaper gallery and browser-based wallpaper workbench. Version **2.1.0**, MIT licensed source.
 
 [Live demo](https://manage.hostingspell.com/tools/walls/index.php) · [Source](https://github.com/thekugelblitz/hostingspell-wallpaper-studio)
 
@@ -13,6 +13,8 @@ A free wallpaper gallery and browser-based wallpaper workbench. Version **2.0.0*
 - Undo/redo (40 document states), smart alignment to canvas and object edges, independent grid visibility/snapping, pixel or nested row/column grids, and quick alignment.
 - Grayscale, vintage, warm, cool, noir and fade filters; strength, brightness, contrast and saturation. Filters affect the wallpaper; logo colours remain intact.
 - Text with six device font families, size, colour, weight, alignment, outline and shadow. Logos can use a shadow, white outline and dark backing plate.
+- Switching canvas sizes preserves layer aspect ratios and width-relative size, normalized positions, rotation and proportional text/stroke effects. Saved size layouts remain independent.
+- Custom download filenames and a +1 button for sequential names (for example, `HSPL Desktop Wallpaper 3.png` → `HSPL Desktop Wallpaper 4.png`). Export extensions follow the actual format; ZIP entries add dimensions.
 - PNG, JPG and WebP export. Selection handles, grid, guides and device preview overlays never export.
 - Portable `.hswall` projects with embedded images. Save up to eight independently positioned canvas layouts in a project and export them in one ZIP. Without saved layouts, ZIP exports desktop and phone versions.
 - Optional device-local draft recovery and a reusable logo kit with brand colour and saved placements. Clear saved device data at any time. Draft recovery is off by default and browser storage can be cleared or evicted; project files are the portable backup.
@@ -48,7 +50,7 @@ The gallery scans only the child `walls/` directory. Supported public image form
 
 ## Browser privacy and limits
 
-New PNG/JPG/WebP files are limited to 32 MB, 64 MP and 16,000 px per side before normalization. Backgrounds above 24 MP and image layers above 4 MP are resized with a visible message. An editing session is capped at 64 MP of decoded source images, including undo history. Reload after downloading a project to release the session image pool. Canvas export is capped at 16 MP, with dimensions from 320–7680 px per side. Large exports and ZIPs can still be constrained by a device's available memory.
+New PNG/JPG/WebP files are limited to 32 MB, 96 MP and 20,000 px per side before normalization. Backgrounds above 40 MP and image layers above 4 MP are resized with a visible message. An editing session is capped at 96 MP of decoded source images, including undo history. Reload after downloading a project to release the session image pool. Canvas export is capped at 16 MP, with dimensions from 320–7680 px per side. Large exports and ZIPs can still be constrained by a device's available memory.
 
 Device drafts and brand kits use IndexedDB only when requested. They remain until cleared or removed by the browser. Saving a portable project embeds its images; share it only when you intend to share those assets. Optional old server workspace recovery uses the existing signed HttpOnly/SameSite cookie and CSRF-protected endpoints. The HTML retains that compatibility cookie. There are no accounts or analytics.
 

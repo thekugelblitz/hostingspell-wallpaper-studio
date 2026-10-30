@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0
+
+Fix aspect-ratio distortion when changing canvas size: layers scale uniformly relative to canvas width and retain normalized centres. Apply the same reflow to automatic size exports and reusable brand kits; retain explicit saved layouts. Scale text and visual effects proportionally. Increase local photo intake to 96 MP / 32 MB and retain backgrounds up to 40 MP, including 25 MB photos. Add custom download names and a sequential +1 filename control.
+
+
 ## 2.0.0
 
 Local browser editing with image/text/shape layers, undo/redo, smart guides, four corner resizing, touch zoom, filters and editable project files. Optional device drafts and brand kits, batch size layouts with ZIP export, device preview overlays and logo visibility styling. Gallery thumbnails, share links and editor reuse; corrected deployment URLs, guide pages, dynamic sitemap and favicon. MIT licence and contributor documentation. Legacy private server recovery and cleanup remain available.
